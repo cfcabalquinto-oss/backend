@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { RowDataPacket, OkPacket } from 'mysql2';
 
@@ -29,7 +29,7 @@ export class StudentService {
 
   async findById(id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT student_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students WHERE student_id = ?',
+      'SELECT student_id, user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students WHERE student_id = ?',
       [id],
     );
     return rows[0];
@@ -37,9 +37,29 @@ export class StudentService {
 
   async getAll() {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT student_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students',
+      'SELECT student_id, user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students',
     );
     return rows;
+  }
+
+  async linkAccount(userId: number, studentId: number, dateofbirth: string) {
+    const [result] = await this.pool().execute<OkPacket>(
+      `UPDATE students
+       SET user_id = ?
+       WHERE student_id = ? AND DATE(dateofbirth) = DATE(?) AND user_id IS NULL`,
+      [userId, studentId, dateofbirth],
+    );
+
+    if (result.affectedRows === 0) {
+      const [existing] = await this.pool().execute<RowDataPacket[]>(
+        'SELECT user_id FROM students WHERE student_id = ? LIMIT 1',
+        [studentId],
+      );
+      if (existing[0]?.user_id) throw new ConflictException('That student profile is already linked to an account.');
+      throw new BadRequestException('We could not match that student ID and birth date.');
+    }
+
+    return this.findById(studentId);
   }
 
   async updateStudent(

@@ -21,3 +21,4 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+migrations/001_role_dashboard.sql

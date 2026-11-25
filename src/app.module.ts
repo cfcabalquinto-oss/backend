@@ -10,8 +10,9 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { EnrollmentModule } from './enrollments/enrollment.module';
 import { GradeModule } from './grades/grade.module';
 import { FeeModule } from './fees/fee.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
-  imports: [DatabaseModule, UsersModule, AuthModule, ProfessorModule, SubjectModule, SectionModule, StudentModule, AttendanceModule, EnrollmentModule, GradeModule, FeeModule],
+  imports: [DatabaseModule, UsersModule, AuthModule, ProfessorModule, SubjectModule, SectionModule, StudentModule, AttendanceModule, EnrollmentModule, GradeModule, FeeModule, DashboardModule],
 })
 export class AppModule {}

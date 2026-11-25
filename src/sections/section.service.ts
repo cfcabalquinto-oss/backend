@@ -21,7 +21,7 @@ export class SectionService {
 
   async findById(section_id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT section_id, section_name, teacher_id, created_at, updated_at FROM sections WHERE section_id = ?',
+      'SELECT section_id, section_name, teacher_id, subject_id, schedule_text, room, created_at, updated_at FROM sections WHERE section_id = ?',
       [section_id],
     );
     return rows[0];
@@ -29,7 +29,7 @@ export class SectionService {
 
   async getAll() {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT section_id, section_name, teacher_id, created_at, updated_at FROM sections',
+      'SELECT section_id, section_name, teacher_id, subject_id, schedule_text, room, created_at, updated_at FROM sections',
     );
     return rows;
   }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -9,35 +9,58 @@ export class EnrollmentController {
   // Get all enrollments (protected)
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getAll() {
-    return this.enrollmentService.getAll();
+  async getAll(@Req() request: { user: { userId: number; role: string } }) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Enrollment lists are only available to professors.');
+    return this.enrollmentService.getAll(request.user.userId);
   }
 
   // Get single enrollment by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getOne(@Param('id') id: string) {
-    return this.enrollmentService.findById(+id);
+  async getOne(@Param('id') id: string, @Req() request: { user: { userId: number; role: string } }) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Enrollment records are only available to professors.');
+    return this.enrollmentService.findByIdForProfessor(+id, request.user.userId);
   }
 
   // Create enrollment (protected)
   @UseGuards(JwtAuthGuard)
   @Post()
- async create(@Body() body: { enrollment_date: string; student_id: number; section_id: number }) {
-    return this.enrollmentService.createEnrollment(body.enrollment_date, body.student_id, body.section_id);
+ async create(
+    @Req() request: { user: { userId: number; role: string } },
+    @Body() body: { enrollment_date: string; student_id: number; section_id: number },
+  ) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can enroll students.');
+    return this.enrollmentService.createEnrollment(body.enrollment_date, Number(body.student_id), Number(body.section_id), request.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/drop-request')
+  async requestDrop(
+    @Param('id') id: string,
+    @Req() request: { user: { userId: number; role: string } },
+    @Body() body: { reason?: string },
+  ) {
+    if (request.user.role !== 'student') throw new ForbiddenException('Only students can request a drop.');
+    return this.enrollmentService.requestDrop(+id, request.user.userId, body.reason?.trim() ?? '');
   }
 
   // Update enrollment by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { enrollment_date?: string; student_id?: number; section_id?: number }) {
-    return this.enrollmentService.updateEnrollment(+id, body);
+  async update(
+    @Param('id') id: string,
+    @Req() request: { user: { userId: number; role: string } },
+    @Body() body: { enrollment_date?: string; status?: string; drop_reason?: string },
+  ) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can update enrollments.');
+    return this.enrollmentService.updateEnrollment(+id, body, request.user.userId);
   }
 
   // Delete enrollment by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.enrollmentService.deleteEnrollment(+id);
+  async remove(@Param('id') id: string, @Req() request: { user: { userId: number; role: string } }) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can remove enrollments.');
+    return this.enrollmentService.deleteEnrollment(+id, request.user.userId);
   }
 }
