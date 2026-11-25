@@ -23,14 +23,14 @@ export class ProfessorController {
   // Create professor (protected)
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: { prof_name: string }) {
-    return this.professorsService.createProfessor(body.prof_name);
+  async create(@Body() body: { user_id: number; prof_name: string }) {
+    return this.professorsService.createProfessor(body.user_id, body.prof_name);
   }
 
   // Update professor by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { prof_name?: string }) {
+  async update(@Param('id') id: string, @Body() body: { user_id?: number; prof_name?: string }) {
     return this.professorsService.updateProfessor(+id, body);
   }
 

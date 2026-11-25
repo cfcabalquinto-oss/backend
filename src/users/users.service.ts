@@ -9,7 +9,7 @@ export class UsersService {
 
   private pool = () => this.db.getPool();
 
-  async createUser(username: string, password: string, role = 'user') {
+  async createUser(username: string, password: string, role = 'student') {
     const hashed = await bcrypt.hash(password, 10);
     const [result] = await this.pool().execute<OkPacket>(
       'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',

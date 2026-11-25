@@ -11,9 +11,21 @@ export class AuthService {
   async validateUser(username: string, pass: string) {
     const user = await this.usersService.findByUsername(username);
     if (!user) return null;
-    const valid = await bcrypt.compare(pass, user.password);
-    if (valid) return { id: user.id, username: user.username, role: user.role };
-    return null;
+
+    const storedPassword = String(user.password ?? '');
+    const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(storedPassword);
+    let valid = false;
+
+    if (isBcryptHash) {
+      valid = await bcrypt.compare(pass, storedPassword);
+    } else if (!storedPassword.startsWith('$2') && storedPassword === pass) {
+      // Upgrade accounts inserted directly into the database with a plain-text password.
+      await this.usersService.updateUser(user.id, { password: pass });
+      valid = true;
+    }
+
+    if (!valid) return null;
+    return { id: user.id, username: user.username, role: user.role };
   }
 
   async login(user: { id: number; username: string; role: string }) {

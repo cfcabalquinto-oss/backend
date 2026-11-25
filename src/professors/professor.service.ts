@@ -8,17 +8,17 @@ export class ProfessorService {
 
   private pool = () => this.db.getPool();
 
-  async createProfessor(profName: string, subjectId: number | null = null) {
+  async createProfessor(userId: number, profName: string) {
     const [result] = await this.pool().execute<OkPacket>(
-      'INSERT INTO professors (prof_name, subject_id) VALUES (?, ?)',
-      [profName, subjectId],
+      'INSERT INTO professors (user_id, prof_name) VALUES (?, ?)',
+      [userId, profName],
     );
-    return { teacher_id: result.insertId, prof_name: profName, subject_id: subjectId };
+    return { teacher_id: result.insertId, user_id: userId, prof_name: profName };
   }
 
   async findById(id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT teacher_id, prof_name, subject_id, created_at, updated_at FROM professors WHERE teacher_id = ?',
+      'SELECT teacher_id, user_id, prof_name, created_at, updated_at FROM professors WHERE teacher_id = ?',
       [id],
     );
     return rows[0];
@@ -26,26 +26,26 @@ export class ProfessorService {
 
   async getAll() {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT teacher_id, prof_name, subject_id, created_at, updated_at FROM professors',
+      'SELECT teacher_id, user_id, prof_name, created_at, updated_at FROM professors',
     );
     return rows;
   }
 
   async updateProfessor(
     id: number,
-    partial: { prof_name?: string; subject_id?: number | null },
+    partial: { user_id?: number; prof_name?: string },
   ) {
     const fields: string[] = [];
     const values: any[] = [];
 
+    if (partial.user_id !== undefined) {
+      fields.push('user_id = ?');
+      values.push(partial.user_id);
+    }
+
     if (partial.prof_name !== undefined) {
       fields.push('prof_name = ?');
       values.push(partial.prof_name);
-    }
-
-    if (partial.subject_id !== undefined) {
-      fields.push('subject_id = ?');
-      values.push(partial.subject_id);
     }
 
     if (fields.length === 0) return await this.findById(id);
