@@ -24,6 +24,73 @@ export class EnrollmentService {
     return { enrollment_id: result.insertId, enrollment_date, student_id, section_id, status: 'Enrolled' };
   }
 
+  async createStudentAndEnroll(
+    professorUserId: number,
+    sectionId: number,
+    enrollmentDate: string,
+    student: { student_name: string; dateofbirth?: string | null; contact_num?: string | null; user_account_id?: number | null },
+  ) {
+    const name = student.student_name.trim();
+    if (!name) throw new BadRequestException('Student name is required.');
+
+    const connection = await this.pool().getConnection();
+    try {
+      await connection.beginTransaction();
+      const [ownedSections] = await connection.execute<RowDataPacket[]>(
+        `SELECT s.section_id FROM sections s
+         JOIN professors p ON p.teacher_id = s.teacher_id
+         WHERE s.section_id = ? AND p.id = ? LIMIT 1`,
+        [sectionId, professorUserId],
+      );
+      if (!ownedSections.length) throw new ForbiddenException('You can only add students to your assigned sections.');
+
+      const accountId = student.user_account_id ? Number(student.user_account_id) : null;
+      if (accountId) {
+        const [accounts] = await connection.execute<RowDataPacket[]>(
+          `SELECT u.id FROM users u
+           LEFT JOIN students existing ON existing.id = u.id
+           WHERE u.id = ? AND u.role = 'student' AND existing.student_id IS NULL LIMIT 1`,
+          [accountId],
+        );
+        if (!accounts.length) throw new BadRequestException('That student login is already linked to a student profile or does not exist.');
+      }
+
+      const [studentResult] = await connection.execute<OkPacket>(
+        `INSERT INTO students (id, student_name, dateofbirth, section_id, contact_num)
+         VALUES (?, ?, ?, ?, ?)`,
+        [accountId, name, student.dateofbirth || null, sectionId, student.contact_num?.trim() || null],
+      );
+      const studentId = studentResult.insertId;
+      const [enrollmentResult] = await connection.execute<OkPacket>(
+        `INSERT INTO enrollments (enrollment_date, student_id, section_id, status)
+         VALUES (?, ?, ?, 'Enrolled')`,
+        [enrollmentDate, studentId, sectionId],
+      );
+      await connection.commit();
+      return {
+        student: {
+          student_id: studentId,
+          student_name: name,
+          dateofbirth: student.dateofbirth || null,
+          section_id: sectionId,
+          contact_num: student.contact_num?.trim() || null,
+        },
+        enrollment: {
+          enrollment_id: enrollmentResult.insertId,
+          enrollment_date: enrollmentDate,
+          student_id: studentId,
+          section_id: sectionId,
+          status: 'Enrolled',
+        },
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
   async findById(enrollment_id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
       'SELECT enrollment_id, enrollment_date, student_id, section_id, status, drop_reason, status_updated_at, created_at, updated_at FROM enrollments WHERE enrollment_id = ?',

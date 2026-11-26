@@ -34,6 +34,33 @@ export class EnrollmentController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('with-student')
+  async createStudentAndEnroll(
+    @Req() request: { user: { userId: number; role: string } },
+    @Body() body: {
+      section_id: number;
+      enrollment_date: string;
+      student_name: string;
+      dateofbirth?: string | null;
+      contact_num?: string | null;
+      user_account_id?: number | null;
+    },
+  ) {
+    if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can add students to sections.');
+    return this.enrollmentService.createStudentAndEnroll(
+      request.user.userId,
+      Number(body.section_id),
+      body.enrollment_date,
+      {
+        student_name: body.student_name,
+        dateofbirth: body.dateofbirth,
+        contact_num: body.contact_num,
+        user_account_id: body.user_account_id,
+      },
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/drop-request')
   async requestDrop(
     @Param('id') id: string,

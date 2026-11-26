@@ -33,6 +33,13 @@ export class DashboardService {
     const [students] = await this.pool().execute<RowDataPacket[]>(
       'SELECT student_id, student_name, section_id FROM students ORDER BY student_name',
     );
+    const [studentAccounts] = await this.pool().execute<RowDataPacket[]>(
+      `SELECT u.id AS user_id, u.username
+       FROM users u
+       LEFT JOIN students s ON s.id = u.id
+       WHERE u.role = 'student' AND s.student_id IS NULL
+       ORDER BY u.username`,
+    );
     const [enrollments] = await this.pool().execute<RowDataPacket[]>(
       `SELECT e.enrollment_id, e.enrollment_date, e.student_id, e.section_id,
               e.status, e.drop_reason, s.student_name
@@ -66,6 +73,7 @@ export class DashboardService {
       profile: { id: professor.teacher_id, userId: professor.user_id, name: professor.prof_name },
       sections,
       students,
+      studentAccounts,
       enrollments,
       grades,
       attendance,
@@ -79,7 +87,7 @@ export class DashboardService {
     );
     const student = students[0];
     if (!student) {
-      return { role: 'student', profile: null, sections: [], students: [], enrollments: [], grades: [], attendance: [] };
+      return { role: 'student', profile: null, sections: [], students: [], studentAccounts: [], enrollments: [], grades: [], attendance: [] };
     }
 
     const [enrollments] = await this.pool().execute<RowDataPacket[]>(
@@ -139,6 +147,7 @@ export class DashboardService {
       profile: { id: student.student_id, userId: student.user_id, name: student.student_name },
       sections,
       students: classmates,
+      studentAccounts: [],
       enrollments,
       grades,
       attendance,
