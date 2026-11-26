@@ -9,17 +9,20 @@ export class StudentService {
   private pool = () => this.db.getPool();
 
   async createStudent(
+    id: number | null,
     student_name: string,
-    dateofbirth: string,
-    section_id: number,
-    contact_num: string,
+    dateofbirth: string | null = null,
+    section_id: number | null = null,
+    contact_num: string | null = null,
   ) {
     const [result] = await this.pool().execute<OkPacket>(
-      'INSERT INTO students (student_name, dateofbirth, section_id, contact_num) VALUES (?, ?, ?, ?)',
-      [student_name, dateofbirth, section_id, contact_num],
+      'INSERT INTO students (id, student_name, dateofbirth, section_id, contact_num) VALUES (?, ?, ?, ?, ?)',
+      [id, student_name, dateofbirth, section_id, contact_num],
     );
     return {
       student_id: result.insertId,
+      id,
+      user_id: id,
       student_name,
       dateofbirth,
       section_id,
@@ -29,7 +32,7 @@ export class StudentService {
 
   async findById(id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT student_id, user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students WHERE student_id = ?',
+      'SELECT student_id, id, id AS user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students WHERE student_id = ?',
       [id],
     );
     return rows[0];
@@ -37,7 +40,7 @@ export class StudentService {
 
   async getAll() {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT student_id, user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students',
+      'SELECT student_id, id, id AS user_id, student_name, dateofbirth, section_id, contact_num, created_at, updated_at FROM students',
     );
     return rows;
   }
@@ -45,17 +48,17 @@ export class StudentService {
   async linkAccount(userId: number, studentId: number, dateofbirth: string) {
     const [result] = await this.pool().execute<OkPacket>(
       `UPDATE students
-       SET user_id = ?
-       WHERE student_id = ? AND DATE(dateofbirth) = DATE(?) AND user_id IS NULL`,
+       SET id = ?
+       WHERE student_id = ? AND DATE(dateofbirth) = DATE(?) AND id IS NULL`,
       [userId, studentId, dateofbirth],
     );
 
     if (result.affectedRows === 0) {
       const [existing] = await this.pool().execute<RowDataPacket[]>(
-        'SELECT user_id FROM students WHERE student_id = ? LIMIT 1',
+        'SELECT id FROM students WHERE student_id = ? LIMIT 1',
         [studentId],
       );
-      if (existing[0]?.user_id) throw new ConflictException('That student profile is already linked to an account.');
+      if (existing[0]?.id) throw new ConflictException('That student profile is already linked to an account.');
       throw new BadRequestException('We could not match that student ID and birth date.');
     }
 
@@ -66,9 +69,9 @@ export class StudentService {
     id: number,
     partial: {
       student_name?: string;
-      dateofbirth?: string;
-      section_id?: number;
-      contact_num?: string;
+      dateofbirth?: string | null;
+      section_id?: number | null;
+      contact_num?: string | null;
     },
   ) {
     const fields: string[] = [];

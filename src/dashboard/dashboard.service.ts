@@ -15,7 +15,7 @@ export class DashboardService {
 
   private async getProfessorDashboard(userId: number) {
     const [professors] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT teacher_id, user_id, prof_name FROM professors WHERE user_id = ? LIMIT 1',
+      'SELECT teacher_id, id AS user_id, prof_name FROM professors WHERE id = ? LIMIT 1',
       [userId],
     );
     const professor = professors[0];
@@ -74,7 +74,7 @@ export class DashboardService {
 
   private async getStudentDashboard(userId: number) {
     const [students] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT student_id, user_id, student_name, section_id FROM students WHERE user_id = ? LIMIT 1',
+      'SELECT student_id, id, id AS user_id, student_name, section_id FROM students WHERE id = ? LIMIT 1',
       [userId],
     );
     const student = students[0];

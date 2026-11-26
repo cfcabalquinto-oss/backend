@@ -13,7 +13,7 @@ export class EnrollmentService {
       `INSERT INTO enrollments (enrollment_date, student_id, section_id, status)
        SELECT ?, ?, sec.section_id, 'Enrolled'
        FROM sections sec JOIN professors p ON p.teacher_id = sec.teacher_id
-       WHERE sec.section_id = ? AND p.user_id = ?
+       WHERE sec.section_id = ? AND p.id = ?
          AND NOT EXISTS (
            SELECT 1 FROM enrollments existing
            WHERE existing.student_id = ? AND existing.section_id = ? AND existing.status <> 'Dropped'
@@ -39,7 +39,7 @@ export class EnrollmentService {
        FROM enrollments e
        JOIN sections sec ON sec.section_id = e.section_id
        JOIN professors p ON p.teacher_id = sec.teacher_id
-       WHERE e.enrollment_id = ? AND p.user_id = ? LIMIT 1`,
+       WHERE e.enrollment_id = ? AND p.id = ? LIMIT 1`,
       [enrollment_id, professorUserId],
     );
     return rows[0];
@@ -52,7 +52,7 @@ export class EnrollmentService {
        FROM enrollments e
        JOIN sections sec ON sec.section_id = e.section_id
        JOIN professors p ON p.teacher_id = sec.teacher_id
-       WHERE p.user_id = ?`,
+       WHERE p.id = ?`,
       [professorUserId],
     );
     return rows;
@@ -86,7 +86,7 @@ export class EnrollmentService {
     const sql = `UPDATE enrollments e SET ${fields.join(', ')}
       WHERE e.enrollment_id = ? AND EXISTS (
         SELECT 1 FROM sections sec JOIN professors p ON p.teacher_id = sec.teacher_id
-        WHERE sec.section_id = e.section_id AND p.user_id = ?
+        WHERE sec.section_id = e.section_id AND p.id = ?
       )`;
     const [result] = await this.pool().execute<OkPacket>(sql, values);
     if (!result.affectedRows) throw new ForbiddenException('You can only update enrollments in your assigned sections.');
@@ -98,7 +98,7 @@ export class EnrollmentService {
       `UPDATE enrollments e
        JOIN students s ON s.student_id = e.student_id
        SET e.status = 'Drop Requested', e.drop_reason = ?
-       WHERE e.enrollment_id = ? AND s.user_id = ? AND e.status = 'Enrolled'`,
+       WHERE e.enrollment_id = ? AND s.id = ? AND e.status = 'Enrolled'`,
       [reason || null, enrollment_id, studentUserId],
     );
     if (!result.affectedRows) throw new BadRequestException('This enrollment cannot be requested for drop.');
@@ -110,7 +110,7 @@ export class EnrollmentService {
       `DELETE e FROM enrollments e
        JOIN sections sec ON sec.section_id = e.section_id
        JOIN professors p ON p.teacher_id = sec.teacher_id
-       WHERE e.enrollment_id = ? AND p.user_id = ?`,
+       WHERE e.enrollment_id = ? AND p.id = ?`,
       [enrollment_id, professorUserId],
     );
     return res.affectedRows > 0;

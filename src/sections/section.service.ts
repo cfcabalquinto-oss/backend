@@ -8,15 +8,17 @@ export class SectionService {
 
   private pool = () => this.db.getPool();
 
-  async createSection(section_name: string, teacher_id: number) {
+  async createSection(
+    section_name: string,
+    teacher_id: number,
+    schedule_text: string | null = null,
+    room: string | null = null,
+  ) {
     const [result] = await this.pool().execute<OkPacket>(
-      'INSERT INTO sections (section_name, teacher_id) VALUES (?, ?)',
-      [
-        section_name ?? null, 
-        teacher_id ?? null
-      ],
+      'INSERT INTO sections (section_name, teacher_id, schedule_text, room) VALUES (?, ?, ?, ?)',
+      [section_name, teacher_id, schedule_text, room],
     );
-    return { section_id: result.insertId, section_name, teacher_id };
+    return { section_id: result.insertId, section_name, teacher_id, schedule_text, room };
   }
 
   async findById(section_id: number) {
@@ -36,7 +38,12 @@ export class SectionService {
 
   async updateSection(
     section_id: number,
-    partial: { section_name?: string; teacher_id?: number },
+    partial: {
+      section_name?: string;
+      teacher_id?: number;
+      schedule_text?: string | null;
+      room?: string | null;
+    },
   ) {
     const fields: string[] = [];
     const values: any[] = [];
@@ -48,6 +55,14 @@ export class SectionService {
     if (partial.teacher_id !== undefined) {
       fields.push('teacher_id = ?');
       values.push(partial.teacher_id);
+    }
+    if (partial.schedule_text !== undefined) {
+      fields.push('schedule_text = ?');
+      values.push(partial.schedule_text);
+    }
+    if (partial.room !== undefined) {
+      fields.push('room = ?');
+      values.push(partial.room);
     }
 
     if (fields.length === 0) return await this.findById(section_id);

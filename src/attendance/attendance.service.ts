@@ -21,7 +21,7 @@ export class AttendanceService {
       `INSERT INTO attendance (attendance_month, attendance_day, student_id, section_id, status)
        SELECT ?, ?, ?, s.section_id, ?
        FROM sections s JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE s.section_id = ? AND p.user_id = ?
+       WHERE s.section_id = ? AND p.id = ?
          AND EXISTS (SELECT 1 FROM enrollments e
                      WHERE e.student_id = ? AND e.section_id = s.section_id AND e.status = 'Enrolled')`,
       [attendance_month, attendance_day, student_id, status, section_id, professorUserId, student_id],
@@ -52,7 +52,7 @@ export class AttendanceService {
        FROM attendance a
        JOIN sections s ON s.section_id = a.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE a.attendance_id = ? AND p.user_id = ? LIMIT 1`,
+       WHERE a.attendance_id = ? AND p.id = ? LIMIT 1`,
       [attendance_id, professorUserId],
     );
     return rows[0];
@@ -65,7 +65,7 @@ export class AttendanceService {
        FROM attendance a
        JOIN sections s ON s.section_id = a.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE p.user_id = ?`,
+       WHERE p.id = ?`,
       [professorUserId],
     );
     return rows;
@@ -103,7 +103,7 @@ export class AttendanceService {
     const sql = `UPDATE attendance a SET ${fields.join(', ')}
       WHERE a.attendance_id = ? AND EXISTS (
         SELECT 1 FROM sections s JOIN professors p ON p.teacher_id = s.teacher_id
-        WHERE s.section_id = a.section_id AND p.user_id = ?
+        WHERE s.section_id = a.section_id AND p.id = ?
           AND EXISTS (SELECT 1 FROM enrollments e
                       WHERE e.student_id = a.student_id AND e.section_id = a.section_id AND e.status = 'Enrolled')
       )`;
@@ -114,7 +114,7 @@ export class AttendanceService {
          JOIN sections s ON s.section_id = a.section_id
          JOIN professors p ON p.teacher_id = s.teacher_id
          JOIN enrollments e ON e.student_id = a.student_id AND e.section_id = a.section_id AND e.status = 'Enrolled'
-         WHERE a.attendance_id = ? AND p.user_id = ? LIMIT 1`,
+         WHERE a.attendance_id = ? AND p.id = ? LIMIT 1`,
         [attendance_id, professorUserId],
       );
       if (!owned.length) throw new ForbiddenException('You can only edit attendance for active students in your assigned sections.');
@@ -127,7 +127,7 @@ export class AttendanceService {
       `DELETE a FROM attendance a
        JOIN sections s ON s.section_id = a.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE a.attendance_id = ? AND p.user_id = ?`,
+       WHERE a.attendance_id = ? AND p.id = ?`,
       [attendance_id, professorUserId],
     );
     return res.affectedRows > 0;

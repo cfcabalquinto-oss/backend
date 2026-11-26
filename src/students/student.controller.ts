@@ -25,9 +25,9 @@ export class StudentController {
   // Create student (protected)
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: { student_name: string, dateofbirth: string, section_id: number, contact_num: string }, @Req() request: { user: { role: string } }) {
+  async create(@Body() body: { id?: number | null; student_name: string; dateofbirth?: string | null; section_id?: number | null; contact_num?: string | null }, @Req() request: { user: { role: string } }) {
     if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can create student records.');
-    return this.studentService.createStudent(body.student_name, body.dateofbirth, body.section_id, body.contact_num);
+    return this.studentService.createStudent(body.id ?? null, body.student_name, body.dateofbirth, body.section_id, body.contact_num);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -43,7 +43,7 @@ export class StudentController {
   // Update student by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { student_name?: string, dateofbirth?: string, section_id?: number, contact_num?: string }, @Req() request: { user: { role: string } }) {
+  async update(@Param('id') id: string, @Body() body: { student_name?: string; dateofbirth?: string | null; section_id?: number | null; contact_num?: string | null }, @Req() request: { user: { role: string } }) {
     if (request.user.role !== 'professor') throw new ForbiddenException('Only professors can edit student records.');
     return this.studentService.updateStudent(+id, body);
   }

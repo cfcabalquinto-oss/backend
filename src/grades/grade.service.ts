@@ -21,7 +21,7 @@ export class GradeService {
       `INSERT INTO grades (PT_AVE, Attendance_ave, exam_ave, gen_ave, student_id, section_id)
        SELECT ?, ?, ?, ?, ?, s.section_id
        FROM sections s JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE s.section_id = ? AND p.user_id = ?
+       WHERE s.section_id = ? AND p.id = ?
          AND EXISTS (SELECT 1 FROM enrollments e
                      WHERE e.student_id = ? AND e.section_id = s.section_id AND e.status = 'Enrolled')`,
       [PT_AVE, Attendance_ave, exam_ave, gen_ave, student_id, section_id, professorUserId, student_id],
@@ -53,7 +53,7 @@ export class GradeService {
        FROM grades g
        JOIN sections s ON s.section_id = g.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE g.grade_id = ? AND p.user_id = ? LIMIT 1`,
+       WHERE g.grade_id = ? AND p.id = ? LIMIT 1`,
       [grade_id, professorUserId],
     );
     return rows[0];
@@ -66,7 +66,7 @@ export class GradeService {
        FROM grades g
        JOIN sections s ON s.section_id = g.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE p.user_id = ?`,
+       WHERE p.id = ?`,
       [professorUserId],
     );
     return rows;
@@ -107,7 +107,7 @@ export class GradeService {
     const sql = `UPDATE grades g SET ${fields.join(', ')}
       WHERE g.grade_id = ? AND EXISTS (
         SELECT 1 FROM sections s JOIN professors p ON p.teacher_id = s.teacher_id
-        WHERE s.section_id = g.section_id AND p.user_id = ?
+        WHERE s.section_id = g.section_id AND p.id = ?
           AND EXISTS (SELECT 1 FROM enrollments e
                       WHERE e.student_id = g.student_id AND e.section_id = g.section_id AND e.status = 'Enrolled')
       )`;
@@ -118,7 +118,7 @@ export class GradeService {
          JOIN sections s ON s.section_id = g.section_id
          JOIN professors p ON p.teacher_id = s.teacher_id
          JOIN enrollments e ON e.student_id = g.student_id AND e.section_id = g.section_id AND e.status = 'Enrolled'
-         WHERE g.grade_id = ? AND p.user_id = ? LIMIT 1`,
+         WHERE g.grade_id = ? AND p.id = ? LIMIT 1`,
         [grade_id, professorUserId],
       );
       if (!owned.length) throw new ForbiddenException('You can only edit grades for active students in your assigned sections.');
@@ -131,7 +131,7 @@ export class GradeService {
       `DELETE g FROM grades g
        JOIN sections s ON s.section_id = g.section_id
        JOIN professors p ON p.teacher_id = s.teacher_id
-       WHERE g.grade_id = ? AND p.user_id = ?`,
+       WHERE g.grade_id = ? AND p.id = ?`,
       [grade_id, professorUserId],
     );
     return res.affectedRows > 0;

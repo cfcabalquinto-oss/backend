@@ -22,15 +22,30 @@ export class SectionController {
 
   // Create section (protected)
   @UseGuards(JwtAuthGuard)
-@Post()
-  async create(@Body() body: { section_name: string; teacher_id: number }) {
-    return this.sectionService.createSection(body.section_name, body.teacher_id);
+  @Post()
+  async create(@Body() body: {
+    section_name: string;
+    teacher_id: number;
+    schedule_text?: string | null;
+    room?: string | null;
+  }) {
+    return this.sectionService.createSection(
+      body.section_name,
+      body.teacher_id,
+      body.schedule_text,
+      body.room,
+    );
   }
 
   // Update section by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { section_name?: string; sched?: string; teacher_id?: number; contact_num?: string }) {
+  async update(@Param('id') id: string, @Body() body: {
+    section_name?: string;
+    teacher_id?: number;
+    schedule_text?: string | null;
+    room?: string | null;
+  }) {
     return this.sectionService.updateSection(+id, body);
   }
 

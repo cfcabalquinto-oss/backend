@@ -10,7 +10,7 @@ export class ProfessorService {
 
   async createProfessor(userId: number, profName: string) {
     const [result] = await this.pool().execute<OkPacket>(
-      'INSERT INTO professors (user_id, prof_name) VALUES (?, ?)',
+      'INSERT INTO professors (id, prof_name) VALUES (?, ?)',
       [userId, profName],
     );
     return { teacher_id: result.insertId, user_id: userId, prof_name: profName };
@@ -18,7 +18,7 @@ export class ProfessorService {
 
   async findById(id: number) {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT teacher_id, user_id, prof_name, created_at, updated_at FROM professors WHERE teacher_id = ?',
+      'SELECT teacher_id, id AS user_id, prof_name, created_at, updated_at FROM professors WHERE teacher_id = ?',
       [id],
     );
     return rows[0];
@@ -26,7 +26,7 @@ export class ProfessorService {
 
   async getAll() {
     const [rows] = await this.pool().execute<RowDataPacket[]>(
-      'SELECT teacher_id, user_id, prof_name, created_at, updated_at FROM professors',
+      'SELECT teacher_id, id AS user_id, prof_name, created_at, updated_at FROM professors',
     );
     return rows;
   }
@@ -39,7 +39,7 @@ export class ProfessorService {
     const values: any[] = [];
 
     if (partial.user_id !== undefined) {
-      fields.push('user_id = ?');
+      fields.push('id = ?');
       values.push(partial.user_id);
     }
 
