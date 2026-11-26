@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { FeeService } from './fee.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -12,6 +12,14 @@ export class FeeController {
   async getAll() {
     return this.feeService.getAll();
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  async getMine(@Req() request: { user: { userId: number; role: string } }) {
+    if (request.user.role !== 'student') throw new ForbiddenException('Fee records are available only to the student who owns them.');
+    return this.feeService.findForStudentUser(request.user.userId);
+  }
+
   // Get single fee by ID (protected)
   @UseGuards(JwtAuthGuard)
   @Get(':id')

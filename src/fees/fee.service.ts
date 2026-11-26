@@ -40,6 +40,18 @@ export class FeeService {
     return rows;
   }
 
+  async findForStudentUser(userId: number) {
+    const [rows] = await this.pool().execute<RowDataPacket[]>(
+      `SELECT f.fees_id, f.amount, f.trans_history, f.student_id, f.created_at
+       FROM fees f
+       JOIN students s ON s.student_id = f.student_id
+       WHERE s.id = ?
+       ORDER BY f.created_at DESC, f.fees_id DESC`,
+      [userId],
+    );
+    return rows;
+  }
+
   async updateFee(
     fees_id: number,
     partial: {
